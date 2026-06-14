@@ -122,6 +122,7 @@ async def get_dev_reading_plain(reading_id: int) -> dict[str, Any]:
         spread = snapshot.get("spread", {})
         summary = snapshot.get("summary", {})
         narrative = snapshot.get("narrative", {})
+        pattern = snapshot.get("pattern", {})
         cards = snapshot.get("cards", [])
 
         return {
@@ -130,6 +131,7 @@ async def get_dev_reading_plain(reading_id: int) -> dict[str, Any]:
             "spread": spread.get("name"),
             "description": spread.get("description"),
             "score_label": snapshot.get("score_label"),
+            "pattern": pattern,
             "opening": narrative.get("opening") or summary.get("text"),
             "cards": [
                 {
@@ -167,7 +169,6 @@ async def get_dev_reading_text(reading_id: int) -> str:
             [
                 "",
                 f"{index}. {card['position']} — {card['card']}",
-                f"Кратко: {card['short_meaning']}",
                 card["text"] or "",
             ]
         )
@@ -175,7 +176,7 @@ async def get_dev_reading_text(reading_id: int) -> str:
     lines.extend(
         [
             "",
-            "Синтез",
+            "Общий смысл расклада",
             plain["synthesis"] or "",
             "",
             "Практический совет",
