@@ -1,6 +1,7 @@
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from sqlalchemy import select
 
@@ -142,6 +143,47 @@ async def get_dev_reading_plain(reading_id: int) -> dict[str, Any]:
             "synthesis": narrative.get("synthesis"),
             "practical_advice": narrative.get("practical_advice") or summary.get("advice"),
         }
+
+
+@router.get("/{reading_id}/text", response_class=PlainTextResponse)
+async def get_dev_reading_text(reading_id: int) -> str:
+    plain = await get_dev_reading_plain(reading_id)
+
+    lines: list[str] = [
+        f"Расклад: {plain['spread']}",
+        "",
+        plain["description"] or "",
+        "",
+        f"Общий фон: {plain['score_label']}",
+        "",
+        "Вступление",
+        plain["opening"] or "",
+        "",
+        "Карты",
+    ]
+
+    for index, card in enumerate(plain["cards"], start=1):
+        lines.extend(
+            [
+                "",
+                f"{index}. {card['position']} — {card['card']}",
+                f"Кратко: {card['short_meaning']}",
+                card["text"] or "",
+            ]
+        )
+
+    lines.extend(
+        [
+            "",
+            "Синтез",
+            plain["synthesis"] or "",
+            "",
+            "Практический совет",
+            plain["practical_advice"] or "",
+        ]
+    )
+
+    return "\n".join(line for line in lines if line is not None)
 
 
 @router.post("/{reading_id}/select-card")
