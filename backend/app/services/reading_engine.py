@@ -177,32 +177,49 @@ def _opening_text(spread: Spread, score: int, tags: list[str], pattern: dict[str
     if spread.code == "quick_answer":
         return (
             f"Это короткий расклад на быстрый взгляд: где находится суть вопроса, что может поддержать и какой шаг выглядит разумным. "
-            f"Общий фон: {_score_label(score).lower()}. Главные мотивы: {motifs}."
+            f"Общий фон: {_score_label(score).lower()}.\n\nГлавные мотивы: {motifs}."
         )
     if spread.code == "yes_no":
         return (
             f"Этот расклад не дает жесткого приговора, а показывает склонность ответа и условия, которые на него влияют. "
-            f"Фон ответа: {_score_label(score).lower()}. Ключевые мотивы: {motifs}."
+            f"Фон ответа: {_score_label(score).lower()}.\n\nКлючевые мотивы: {motifs}."
         )
     if spread.code == "two_options":
         return (
             f"Расклад сравнивает два направления не как «хорошее» и «плохое», а как две разные цены выбора. "
-            f"Общий фон: {_score_label(score).lower()}. Главные мотивы: {motifs}."
+            f"Общий фон: {_score_label(score).lower()}.\n\nГлавные мотивы: {motifs}."
         )
     if spread.category == "relationships":
         return (
             f"Расклад про отношения показывает не чужие гарантированные мысли, а динамику связи и эмоциональные акценты. "
-            f"Общий фон: {_score_label(score).lower()}. Важные мотивы: {motifs}."
+            f"Общий фон: {_score_label(score).lower()}.\n\nВажные мотивы: {motifs}."
         )
 
     return (
         f"Расклад «{spread.name}» показывает {_score_label(score).lower()}. "
-        f"Главные мотивы сейчас: {motifs}. Карты стоит читать как карту состояния, а не как обещание неизбежного результата."
+        f"Карты стоит читать как карту состояния, а не как обещание неизбежного результата.\n\nГлавные мотивы: {motifs}."
     )
 
 
 def _card_line(card_snapshot: dict[str, Any]) -> str:
     return f"{card_snapshot['card']['name_ru']} — {card_snapshot['interpretation']['short_meaning']}"
+
+
+def _energy_label(card_snapshot: dict[str, Any]) -> str:
+    score = card_snapshot["card"]["score"]
+    if score >= 3:
+        return "сильная опора"
+    if score >= 1:
+        return "рабочий ресурс"
+    if score == 0:
+        return "нейтральная зона"
+    if score <= -3:
+        return "сильное напряжение"
+    return "зона осторожности"
+
+
+def _position_name(card_snapshot: dict[str, Any]) -> str:
+    return card_snapshot.get("position", {}).get("name", "позиция")
 
 
 def _synthesis_quick_answer(cards_snapshot: list[dict[str, Any]], score: int, pattern: dict[str, Any]) -> str:
@@ -220,10 +237,9 @@ def _synthesis_quick_answer(cards_snapshot: list[dict[str, Any]], score: int, pa
 
     pattern_comment = _pattern_comment(pattern)
     return (
-        f"Суть вопроса задает {_card_line(core)}. "
-        f"То есть главный узел сейчас не во всем сразу, а именно в этой теме. "
-        f"Вторая карта, {_card_line(support)}, показывает, за счет чего можно не застрять. {support_bridge} "
-        f"Совет через карту {_card_line(advice)} переводит расклад в действие. {pattern_comment}"
+        f"В первой позиции виден главный узел вопроса: это {_energy_label(core)}, а не просто внешняя деталь ситуации. "
+        f"Вторая позиция показывает, за счет чего можно не застрять: там находится {_energy_label(support)}. {support_bridge} "
+        f"Финальная позиция переводит расклад в действие и звучит как {_energy_label(advice)}. {pattern_comment}"
     )
 
 
@@ -243,9 +259,9 @@ def _synthesis_yes_no(cards_snapshot: list[dict[str, Any]], score: int, pattern:
     answer, strengthens, weakens = cards_snapshot[:3]
     direction = _yes_no_direction(score, answer["card"]["score"])
     return (
-        f"Главная карта ответа — {_card_line(answer)}. Поэтому общий наклон ответа: {direction}. "
-        f"Усиливает ситуацию {_card_line(strengthens)}: это то, на что можно опереться. "
-        f"Ослабляет или запутывает ответ {_card_line(weakens)}: эту тему лучше не игнорировать. "
+        f"Общий наклон ответа: {direction}. "
+        f"Усиливающая позиция дает {_energy_label(strengthens)} — это то, на что можно опереться. "
+        f"Ослабляющая позиция показывает {_energy_label(weakens)} — этот фактор лучше не игнорировать. "
         f"{_pattern_comment(pattern)}"
     )
 
@@ -265,10 +281,10 @@ def _synthesis_two_options(cards_snapshot: list[dict[str, Any]], score: int, pat
         lean = "Оба варианта примерно равны по напряжению; выбор зависит не от выгоды, а от того, какую цену вы готовы принять."
 
     return (
-        f"Вариант A держится на {_card_line(a_plus)}, но его слабое место — {_card_line(a_risk)}. "
-        f"Если идти туда, итоговая линия описывается картой {_card_line(a_outcome)}. "
-        f"Вариант B дает ресурс через {_card_line(b_plus)}, а напряжение показывает {_card_line(b_risk)}. "
-        f"Его итоговая линия — {_card_line(b_outcome)}. {lean} {_pattern_comment(pattern)}"
+        f"Вариант A дает {_energy_label(a_plus)} в плюсе, но его риск звучит как {_energy_label(a_risk)}. "
+        f"Итоговая линия варианта A выглядит как {_energy_label(a_outcome)}. "
+        f"Вариант B дает {_energy_label(b_plus)} в плюсе, а его риск — {_energy_label(b_risk)}. "
+        f"Итоговая линия варианта B выглядит как {_energy_label(b_outcome)}. {lean} {_pattern_comment(pattern)}"
     )
 
 
@@ -287,9 +303,9 @@ def _synthesis_relationship(cards_snapshot: list[dict[str, Any]], score: int, pa
         tone = "Динамика неоднозначная: рядом стоят и интерес, и сомнение."
 
     return (
-        f"Первый акцент расклада — {_card_line(first)}: он задает эмоциональный фон ситуации. "
-        f"Средняя точка, карта {_card_line(middle)}, показывает, где находится главный поворот или скрытое напряжение. "
-        f"Финальный акцент — {_card_line(last)} — показывает, во что эта динамика может перейти при текущем поведении. {tone} {_pattern_comment(pattern)}"
+        f"Первый акцент задает эмоциональный фон ситуации и звучит как {_energy_label(first)}. "
+        f"Средняя точка показывает, где находится главный поворот или скрытое напряжение: это {_energy_label(middle)}. "
+        f"Финальная позиция показывает, во что динамика может перейти при текущем поведении: там {_energy_label(last)}. {tone} {_pattern_comment(pattern)}"
     )
 
 
@@ -303,10 +319,10 @@ def _synthesis_big(cards_snapshot: list[dict[str, Any]], score: int, pattern: di
     last = cards_snapshot[-1]
 
     return (
-        f"Большой расклад начинается с темы {_card_line(first)}, поэтому ее стоит считать входом во всю картину. "
-        f"Самый поддерживающий ресурс здесь — {_card_line(strongest)}. "
-        f"Самое чувствительное место — {_card_line(hardest)}; именно там не стоит торопиться или действовать на автомате. "
-        f"Финальный акцент {_card_line(last)} показывает направление, в которое складывается история, если ничего резко не ломать. "
+        f"Большой расклад начинается с позиции «{_position_name(first)}», и это вход во всю картину. "
+        f"Самая сильная опора находится в позиции «{_position_name(strongest)}». "
+        f"Самое чувствительное место — позиция «{_position_name(hardest)}»; именно там не стоит торопиться или действовать на автомате. "
+        f"Финальный акцент в позиции «{_position_name(last)}» показывает направление, в которое складывается история, если ничего резко не ломать. "
         f"{_pattern_comment(pattern)}"
     )
 
@@ -317,14 +333,9 @@ def _synthesis_generic(cards_snapshot: list[dict[str, Any]], score: int, pattern
 
     first = cards_snapshot[0]
     last = cards_snapshot[-1]
-    first_card = first["card"]["name_ru"]
-    first_meaning = first["interpretation"]["short_meaning"]
-    last_card = last["card"]["name_ru"]
-    last_meaning = last["interpretation"]["short_meaning"]
-
     if len(cards_snapshot) == 1:
         return (
-            f"Главный смысл расклада сосредоточен в карте {first_card}: {first_meaning}. "
+            f"Главный смысл расклада сосредоточен в одной позиции, и она звучит как {_energy_label(first)}. "
             "Сегодня важнее не искать много вариантов, а услышать один ясный акцент."
         )
 
@@ -336,27 +347,22 @@ def _synthesis_generic(cards_snapshot: list[dict[str, Any]], score: int, pattern
         bridge = "Общий рисунок неоднозначный: в нем есть и ресурс, и зона сомнения"
 
     return (
-        f"{bridge}. Начальная карта, {first_card}, задает тему «{first_meaning}», "
-        f"а финальный акцент карты {last_card} переводит ее в «{last_meaning}». "
+        f"{bridge}. Начальная позиция звучит как {_energy_label(first)}, "
+        f"а финальный акцент переводит историю в {_energy_label(last)}. "
         f"Между этими точками и находится главный выбор: что усилить, а что перестать кормить вниманием. {_pattern_comment(pattern)}"
     )
 
 
 def _pattern_comment(pattern: dict[str, Any]) -> str:
-    strongest = pattern.get("strongest_card")
-    hardest = pattern.get("hardest_card")
-    strongest_text = _card_line(strongest) if strongest else "ресурс не выделен явно"
-    hardest_text = _card_line(hardest) if hardest else "напряжение не выделено явно"
-
     if pattern["code"] == "supportive":
-        return f"Плюсовых карт больше, поэтому главный ресурс расклада — {strongest_text}; его стоит использовать осознанно."
+        return "В раскладе больше опоры, чем напряжения, поэтому главный смысл не в борьбе, а в аккуратном использовании ресурса."
     if pattern["code"] == "mixed_with_exit":
-        return f"Расклад не полностью ровный, но выход есть: сильнее всего поддерживает {strongest_text}, а осторожности требует {hardest_text}."
+        return "Расклад не полностью ровный, но в нем есть выход: важно отличить рабочую опору от места, где нужна осторожность."
     if pattern["code"] == "tense_needs_pause":
-        return f"Минусовых карт больше, поэтому важнее сначала снизить давление; самая чувствительная точка — {hardest_text}."
+        return "В раскладе больше напряжения, чем опоры, поэтому первым делом лучше снизить давление и не ускорять события."
     if pattern["code"] == "positive_but_unstable":
-        return f"Ресурс есть, но совет или финальный акцент требуют осторожности: обратите внимание на {hardest_text}."
-    return f"Плюсы и напряжения распределены почти ровно: ресурс дает {strongest_text}, а проверку задает {hardest_text}."
+        return "Ресурс есть, но финальный акцент требует осторожности: не стоит превращать поддержку в давление."
+    return "Опора и напряжение распределены почти ровно: здесь важнее не выбрать крайность, а удержать баланс."
 
 
 def _synthesis_text(spread: Spread, cards_snapshot: list[dict[str, Any]], score: int, pattern: dict[str, Any]) -> str:
@@ -375,7 +381,6 @@ def _synthesis_text(spread: Spread, cards_snapshot: list[dict[str, Any]], score:
 
 def _action_hint(card_snapshot: dict[str, Any]) -> str:
     tags = set(card_snapshot["interpretation"].get("tags") or [])
-    meaning = card_snapshot["interpretation"]["short_meaning"]
     card = card_snapshot["card"]
 
     if tags & {"диалог", "взаимность", "сообщение", "чувства", "романтика", "дружба", "поддержка", "радость"}:
@@ -396,17 +401,17 @@ def _action_hint(card_snapshot: dict[str, Any]) -> str:
         return "переведите идею в рабочий процесс: задача, срок, первый измеримый результат"
 
     if card.get("arcana") == "major":
-        return f"посмотрите, какой этап связан с темой «{meaning}»: что уже пора завершить, принять или назвать своим именем"
+        return "назовите главный этап происходящего: что пора завершить, принять или перестать обходить стороной"
     if card.get("suit") == "cups":
-        return f"разберитесь, какое чувство стоит за темой «{meaning}», и выразите его спокойнее, чем хочется в первый момент"
+        return "разберитесь, какое чувство стоит за реакцией, и выразите его спокойнее, чем хочется в первый момент"
     if card.get("suit") == "swords":
-        return f"запишите три факта по теме «{meaning}» и отдельно три предположения; решение принимайте только по фактам"
+        return "запишите три факта и отдельно три предположения; решение принимайте только по фактам"
     if card.get("suit") == "wands":
-        return f"выберите действие по теме «{meaning}», которое можно начать сегодня без долгой подготовки"
+        return "выберите действие, которое можно начать сегодня без долгой подготовки"
     if card.get("suit") == "pentacles":
-        return f"проверьте тему «{meaning}» через практику: деньги, время, договоренность, тело или конкретный результат"
+        return "проверьте ситуацию через практику: деньги, время, договоренность или конкретный результат"
 
-    return f"сведите тему «{meaning}» к одному наблюдаемому шагу, чтобы не раствориться в общих рассуждениях"
+    return "сведите вопрос к одному наблюдаемому шагу, чтобы не раствориться в общих рассуждениях"
 
 
 def _practical_advice(spread: Spread, cards_snapshot: list[dict[str, Any]], score: int) -> str:
@@ -415,12 +420,10 @@ def _practical_advice(spread: Spread, cards_snapshot: list[dict[str, Any]], scor
         return "Сделайте паузу и вернитесь к вопросу позже."
 
     if spread.code == "yes_no" and len(cards_snapshot) >= 3:
-        answer, strengthens, weakens = cards_snapshot[:3]
+        _answer, _strengthens, _weakens = cards_snapshot[:3]
         return (
-            f"Практически: сначала проверьте тему карты {weakens['card']['name_ru']} — "
-            f"«{weakens['interpretation']['short_meaning']}», потому что она может искажать ответ. "
-            f"Затем опирайтесь на карту {strengthens['card']['name_ru']}: «{strengthens['interpretation']['short_meaning']}». "
-            "После этого вопрос станет честнее, а решение спокойнее."
+            "Практически: сначала проверьте фактор, который ослабляет ответ, а уже потом опирайтесь на то, что его усиливает. "
+            "Если после этого решение не становится спокойнее, вопрос пока лучше не форсировать."
         )
 
     if spread.code == "two_options" and len(cards_snapshot) >= 6:
@@ -428,52 +431,46 @@ def _practical_advice(spread: Spread, cards_snapshot: list[dict[str, Any]], scor
         score_a = sum(item["card"]["score"] for item in [a_plus, a_risk, a_outcome])
         score_b = sum(item["card"]["score"] for item in [b_plus, b_risk, b_outcome])
         chosen = "A" if score_a >= score_b else "B"
-        risk = a_risk if chosen == "A" else b_risk
-        outcome = a_outcome if chosen == "A" else b_outcome
         return (
-            f"Практически: если склоняетесь к варианту {chosen}, не смотрите только на обещанный результат "
-            f"({outcome['card']['name_ru']} — {outcome['interpretation']['short_meaning']}). "
-            f"Сначала честно проверьте риск: {risk['card']['name_ru']} — {risk['interpretation']['short_meaning']}."
+            f"Практически: если склоняетесь к варианту {chosen}, не смотрите только на итоговую выгоду. "
+            "Сначала проверьте цену этого выбора: что он потребует, что ограничит и где может перегрузить."
         )
 
-    card_name = advice_card["card"]["name_ru"]
-    meaning = advice_card["interpretation"]["short_meaning"]
     action = _action_hint(advice_card)
 
     if spread.code == "card_of_day":
-        return f"На сегодня карта {card_name} предлагает такой фокус: {action}."
+        return f"На сегодня фокус такой: {action}."
     if spread.category == "relationships":
         return (
-            f"В отношениях карта {card_name} просит не угадывать за другого человека. "
-            f"Лучше сделать так: {action}."
+            f"В отношениях не угадывайте за другого человека. Лучше сделать так: {action}."
         )
     if spread.category == "work_money":
         return (
-            f"В рабочей или денежной теме карта {card_name} просит конкретики: {action}. "
-            "Решение должно быть проверяемым, а не только эмоционально убедительным."
+            f"В рабочей или денежной теме нужна конкретика: {action}. "
+            "Опирайтесь на то, что можно проверить, посчитать или закрепить договоренностью."
         )
     if spread.category == "personal":
         return (
-            f"Для личной темы карта {card_name} дает внутренний ориентир: {action}. "
+            f"Для личной темы внутренний ориентир такой: {action}. "
             "Здесь важнее честность с собой, чем быстрый внешний результат."
         )
 
     if score <= -3:
         return (
-            f"Карта {card_name} советует снизить давление и разобраться с темой «{meaning}» без резких решений. "
+            "Практически лучше снизить давление и не принимать резких решений. "
             "Лучше выбрать действие, которое уменьшает тревогу, а не доказывает правоту."
         )
     if advice_card["card"]["score"] <= -2:
         return (
-            f"Карта {card_name} просит не ускорять события и сначала разобраться с темой «{meaning}». "
+            "Не ускоряйте события. "
             "Здесь полезнее убрать лишнее напряжение, чем добавлять новые действия."
         )
     if advice_card["card"]["score"] >= 2:
         return (
-            f"Карта {card_name} поддерживает активное действие: {action}. "
+            f"Здесь можно действовать активнее: {action}. "
             "Это та часть расклада, где можно действовать смелее."
         )
-    return f"Карта {card_name} предлагает спокойный практичный ход: {action}."
+    return f"Спокойный практичный ход: {action}."
 
 
 def _score_label(score: int) -> str:
